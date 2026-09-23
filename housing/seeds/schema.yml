@@ -1,0 +1,22 @@
+version: 2
+
+seeds:
+  - name: seed_barrio_mapping
+    description: >
+      Mapea el nombre de barrio de Inside Airbnb (`neighbourhood_cleansed`) al id de
+      barrio (`lBar...`) y la etiqueta oficial de Barcelona Dades. Cubre los 73 barrios;
+      2 de ellos (Baró de Viver, Vallbona) no tienen anuncios activos en el snapshot
+      actual pero se incluyen para que el mapeo esté completo.
+    columns:
+      - name: airbnb_neighbourhood
+        data_tests:
+          - unique
+          - not_null
+      - name: barrio_id
+        data_tests:
+          - unique
+          - not_null
+      - name: barrio_label
+        data_tests:
+          - unique
+          - not_null

@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: stg_airbnb__listings
+    description: Un anuncio de Inside Airbnb por snapshot trimestral, tipado y con el precio limpio.
+    columns:
+      - name: listing_id
+        data_tests:
+          - not_null
+      - name: neighbourhood
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('seed_barrio_mapping')
+              field: airbnb_neighbourhood
+      - name: room_type
+        data_tests:
+          - accepted_values:
+              values: ["Entire home/apt", "Private room", "Shared room", "Hotel room"]
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, _snapshot_date]
+
+  - name: stg_airbnb__calendar
+    description: Disponibilidad diaria de un listing por snapshot trimestral.
+    columns:
+      - name: listing_id
+        data_tests:
+          - not_null
+      - name: calendar_date
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, calendar_date, _snapshot_date]
+
+  - name: stg_bcn__rent
+    description: Estadísticas de alquiler de Barcelona Dades (€/mes y €/m²), aplanadas y tipadas.
+    columns:
+      - name: metric_name
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["rent_price_monthly", "rent_price_per_m2"]
+      - name: period_id
+        data_tests:
+          - not_null
+      - name: territory_id
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [stat_id, period_id, territory_id]

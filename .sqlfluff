@@ -1,6 +1,14 @@
 [sqlfluff]
 templater = dbt
 dialect = clickhouse
+max_line_length = 100
+# structure.column_order: agrupamos columnas por criterio propio, no wildcard-then-simple.
+# capitalisation.functions: los nombres oficiales de función de ClickHouse son camelCase
+# (toUInt64, replaceRegexpAll...), no encajan en ninguna política upper/lower/consistent.
+exclude_rules = structure.column_order, capitalisation.functions
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = lower
 
 [sqlfluff:templater:dbt]
 project_dir = housing
