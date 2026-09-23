@@ -44,3 +44,10 @@ pre-commit run --all-files
 ```
 
 Ejecuta `ruff` sobre Python y `sqlfluff` (dialecto `clickhouse`, templater `dbt`) sobre los modelos SQL.
+
+## CI/CD
+
+- `ci.yml` (en cada PR): pre-commit, `dbt build` completo contra fixtures (~200 filas/fuente, perfil `ci`) en un ClickHouse de un solo uso, y comprobación de que el DAG de Airflow importa sin errores.
+- `cd.yml` (al hacer merge a `main`): genera los docs de dbt y los publica en GitHub Pages.
+
+Docs publicados: https://<usuario>.github.io/bcn-housing-analytics/ (placeholder hasta el primer merge a `main` con el repo en GitHub).

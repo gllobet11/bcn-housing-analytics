@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  pull_request:
+
+env:
+  CLICKHOUSE_HOST: localhost
+  CLICKHOUSE_PORT: "8123"
+  CLICKHOUSE_USER: default
+  CLICKHOUSE_PASSWORD: ci_password
+  CLICKHOUSE_SCHEMA: raw_ci
+  DBT_PROFILES_DIR: ${{ github.workspace }}
+
+jobs:
+  dbt:
+    runs-on: ubuntu-latest
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server:24.8
+        ports:
+          - 8123:8123
+        env:
+          CLICKHOUSE_DB: raw_ci
+          CLICKHOUSE_USER: default
+          CLICKHOUSE_PASSWORD: ci_password
+        options: >-
+          --health-cmd "wget --spider -q http://localhost:8123/ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: dbt deps
+        run: dbt deps --project-dir housing
+
+      - name: Load fixtures into raw_ci
+        run: python ingestion/load_ci_fixtures.py
+
+      - name: pre-commit (ruff + sqlfluff)
+        run: pre-commit run --all-files
+
+      - name: dbt build (fixtures)
+        run: dbt build --project-dir housing --target ci
+
+  airflow-dagbag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Airflow image
+        run: docker build -f Dockerfile.airflow -t housing-airflow-ci .
+
+      - name: Check DAG imports without errors
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/airflow/dags:/opt/airflow/dags" \
+            -v "${{ github.workspace }}/housing:/opt/airflow/project/housing" \
+            -v "${{ github.workspace }}/ingestion:/opt/airflow/project/ingestion" \
+            -v "${{ github.workspace }}/data:/opt/airflow/project/data" \
+            -v "${{ github.workspace }}/profiles.yml:/opt/airflow/project/profiles.yml" \
+            -e AIRFLOW__CORE__LOAD_EXAMPLES=false \
+            housing-airflow-ci \
+            bash -c "airflow db migrate && python -c \"
+          from airflow.models import DagBag
+          db = DagBag(dag_folder='/opt/airflow/dags', include_examples=False)
+          assert not db.import_errors, db.import_errors
+          print('DagBag OK:', list(db.dags.keys()))
+          \""

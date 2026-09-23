@@ -1,0 +1,70 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  CLICKHOUSE_HOST: localhost
+  CLICKHOUSE_PORT: "8123"
+  CLICKHOUSE_USER: default
+  CLICKHOUSE_PASSWORD: ci_password
+  CLICKHOUSE_SCHEMA: raw_ci
+  DBT_PROFILES_DIR: ${{ github.workspace }}
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    services:
+      clickhouse:
+        image: clickhouse/clickhouse-server:24.8
+        ports:
+          - 8123:8123
+        env:
+          CLICKHOUSE_DB: raw_ci
+          CLICKHOUSE_USER: default
+          CLICKHOUSE_PASSWORD: ci_password
+        options: >-
+          --health-cmd "wget --spider -q http://localhost:8123/ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: dbt deps
+        run: dbt deps --project-dir housing
+
+      - name: Load fixtures into raw_ci
+        run: python ingestion/load_ci_fixtures.py
+
+      # ponytail: no hay warehouse de "producción" accesible desde CI (todo corre
+      # local en Docker, coste 0); los docs se generan sobre las mismas fixtures
+      # de CI en vez de contra un ClickHouse real. Cambiar cuando haya un target
+      # `prod` alcanzable desde GitHub Actions.
+      - name: dbt build + docs generate
+        run: |
+          dbt build --project-dir housing --target ci
+          dbt docs generate --project-dir housing --target ci
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: housing/target
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
