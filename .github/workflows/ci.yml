@@ -8,6 +8,7 @@ env:
   CLICKHOUSE_PORT: "8123"
   CLICKHOUSE_USER: default
   CLICKHOUSE_PASSWORD: ci_password
+  CLICKHOUSE_DB: raw_ci
   CLICKHOUSE_SCHEMA: raw_ci
   DBT_PROFILES_DIR: ${{ github.workspace }}
 
