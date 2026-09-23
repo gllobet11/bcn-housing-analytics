@@ -1,0 +1,17 @@
+version: 2
+
+snapshots:
+  - name: snp_listings
+    description: >
+      SCD2 sobre el estado "actual" (último snapshot trimestral) de cada
+      listing. Estrategia `check` sobre price, room_type y availability_365:
+      cada `dbt snapshot` compara ese estado contra el último registrado y
+      abre una fila nueva si alguna de las tres columnas cambió.
+    columns:
+      - name: listing_id
+        data_tests:
+          - not_null
+      - name: dbt_scd_id
+        data_tests:
+          - unique
+          - not_null

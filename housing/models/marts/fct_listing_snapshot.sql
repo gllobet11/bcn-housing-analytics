@@ -1,5 +1,6 @@
 {{ config(
-    materialized='table',
+    materialized='incremental',
+    incremental_strategy='insert_overwrite',
     engine='MergeTree()',
     order_by=['barrio_id', 'snapshot_date', 'listing_id'],
     partition_by='toYYYYMM(snapshot_date)'
@@ -11,10 +12,21 @@
 -- siempre filtran/agrupan por barrio y trimestre antes que por listing
 -- individual, así ClickHouse puede saltar gránulos por barrio+fecha.
 -- partition_by toYYYYMM(snapshot_date): cada snapshot trimestral es una carga
--- atómica; también deja preparado el incremental de la Fase 4 (reemplazar una
--- partición entera en vez de filas sueltas).
+-- atómica.
+-- incremental_strategy='insert_overwrite': cada carga trimestral cae en su
+-- propia partición mensual; dbt-clickhouse construye solo las particiones
+-- presentes en los datos nuevos y las reemplaza enteras con REPLACE PARTITION,
+-- así que reprocesar el mismo snapshot no duplica filas y el resultado final
+-- es idéntico a un --full-refresh procesado partición a partición. No usamos
+-- 'delete+insert'/unique_key porque aquí no hay updates fila a fila: cada
+-- snapshot_date es una carga atómica, y "append" duplicaría al reejecutar.
 with listings as (
     select * from {{ ref('stg_airbnb__listings') }}
+    {% if is_incremental() %}
+        where _snapshot_date > (
+            select max(loaded.snapshot_date) from {{ this }} as loaded
+        )
+    {% endif %}
 ),
 
 geography as (

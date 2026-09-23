@@ -44,7 +44,10 @@ models:
           combination_of_columns: [barrio_id, quarter_start]
 
   - name: fct_listing_snapshot
-    description: "Grano: listing x snapshot trimestral de Inside Airbnb."
+    description: >
+      Grano: listing x snapshot trimestral de Inside Airbnb. Incremental
+      (insert_overwrite por partición mensual): cada `dbt run` solo procesa
+      snapshots posteriores al último cargado.
     columns:
       - name: listing_id
         data_tests:
@@ -62,6 +65,21 @@ models:
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [listing_id, snapshot_date]
+
+  - name: fct_price_changes
+    description: >
+      Grano: un cambio de precio por listing, detectado en `snp_listings`
+      (snapshot SCD2 con estrategia `check` sobre price/room_type/availability_365).
+    columns:
+      - name: listing_id
+        data_tests:
+          - not_null
+      - name: changed_at
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, changed_at]
 
   - name: mart_barrio_quarter
     description: >
