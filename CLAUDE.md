@@ -1,6 +1,6 @@
 # bcn-housing-analytics
 
-Proyecto de portfolio: pipeline ELT sobre datos abiertos de Barcelona (Inside Airbnb + Open Data BCN alquiler) con dbt-core + ClickHouse, orquestado con Airflow, CI/CD en GitHub Actions. Ver `kickoff.md` para el plan completo por fases y `progress.md` para el registro de avance.
+Proyecto de portfolio: pipeline ELT sobre datos abiertos de Barcelona (Inside Airbnb + alquiler medio por barrio de la API de Barcelona Dades) con dbt-core + ClickHouse, orquestado con Airflow, CI/CD en GitHub Actions. Ver `kickoff.md` para el plan completo por fases y `progress.md` para el registro de avance.
 
 ## Forma de trabajo
 - Se implementa **una fase a la vez**, siguiendo el prompt de esa fase en `kickoff.md`.

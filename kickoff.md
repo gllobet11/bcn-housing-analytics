@@ -23,10 +23,16 @@ Forma de trabajo: un prompt por fase en Claude Code, `/clear` entre fases, valid
 ## Fuentes de datos (licencia abierta)
 
 1. **Inside Airbnb, Barcelona**: `listings.csv.gz`, `calendar.csv.gz` y `neighbourhoods.geojson`. Licencia CC BY 4.0. Hay descarga libre de los snapshots trimestrales del último año; el último es del 24/06/2026. Con 4 snapshots tienes material para modelos incrementales y SCD2.
-2. **Open Data BCN, alquiler medio por barrio**: datasets `est-mercat-immobiliari-lloguer-mitja-mensual` (€/mes) y `...-lloguer-superficie-mitjana` (€/m²). Son trimestrales por barrio y vienen de las fianzas del Incasòl.
+2. **Barcelona Dades (portaldades.ajuntament.barcelona.cat), alquiler medio por barrio**. Verificado el 23/09/2026. Los antiguos datasets `est-mercat-immobiliari-*` de Open Data BCN ya no existen: devuelven 404 en CKAN.
+   - Estadísticas: `b37xv8wcjh` (alquiler medio, €/mes) y `5ibudgqbrb` (alquiler medio por superficie, €/m²). Licencia CC BY 4.0. Salen de las fianzas del Incasòl.
+   - Cobertura: trimestral y anual desde 2014T1 hasta 2026T1, con niveles Catalunya › ámbito › municipio › distrito › barrio. Los 73 barrios, unas 4.270 filas de barrio por estadística.
+   - Acceso: `GET https://portaldades.ajuntament.barcelona.cat/services/backend/rest/statistic?id=<id>&language=ca` con la cabecera `X-IBM-Client-Id`. El client id es público: lo sirve la web en `/portal/config/apimanagerconsumercredentials.json`. **Léelo en tiempo de ejecución, no lo pongas fijo en el código.**
+   - Formato: `dims[0]` es el tiempo (ids tipo `t_Trimestre_2024-04-01T00:00:00Z`), `dims[1]` es el árbol de territorios (ids tipo `lBarlaTeixonera`, con `type` = Barri/Districte y `label`), y `values[]` es una fila por celda con `{dim0, dim1, value}`. Los ámbitos con menos de 6 contratos no se publican: habrá huecos.
+   - ⚠️ Es una API **no documentada** (la usa la propia web). Puede cambiar sin avisar. Por eso guardas el JSON crudo tal cual (landing) y añades un test de contrato del esquema: si cambia, el pipeline falla con un error claro en lugar de romperse en silencio.
+   - Plan B si la API deja de funcionar: el Excel "Lloguers Barcelona per districtes i barris" de habitatge.gencat.cat (descarga manual, misma fuente Incasòl).
 3. **Mercado adicional (fase 7)**: Inside Airbnb de Madrid o Lisboa. Así demuestras el "adaptar a nuevos mercados" que pide la oferta.
 
-> Problema real de data quality incluido: los nombres de barrio de Inside Airbnb y los códigos de Open Data BCN no coinciden 1:1. Hay que resolverlo con un seed de mapeo testeado.
+> Problema real de data quality incluido: los barrios de Inside Airbnb (`neighbourhood_cleansed`, nombres de texto) y los ids de Barcelona Dades (`lBar...`, con `label`) no coinciden 1:1. Hay que resolverlo con un seed de mapeo testeado. El árbol de `dims[1]` ya te da la jerarquía distrito › barrio para `dim_geography`.
 
 ## Modelo objetivo
 
@@ -55,14 +61,14 @@ KPIs de `mart_barrio_quarter`: número de anuncios activos, % de alojamiento ent
 ## Fase 1 — Ingesta EL (~3 h)
 
 **Prompt:**
-> Script Python `ingestion/load_raw.py` que descarga Inside Airbnb Barcelona (listings, calendar y neighbourhoods de los snapshots disponibles) y los CSV de alquiler medio por barrio de Open Data BCN, y los carga sin transformar en la base `raw` de ClickHouse. Añade una columna `_snapshot_date` y otra `_loaded_at`. Debe ser idempotente: si se recarga un snapshot ya cargado, se reemplaza y no se duplica. Declara las fuentes en `models/sources.yml` con `loaded_at_field` y un umbral de freshness.
+> Script Python `ingestion/load_raw.py` que descarga Inside Airbnb Barcelona (listings, calendar y neighbourhoods de los snapshots disponibles) y las estadísticas `b37xv8wcjh` y `5ibudgqbrb` de la API de Barcelona Dades (leyendo el client id en tiempo de ejecución desde `/portal/config/apimanagerconsumercredentials.json` y enviándolo como `X-IBM-Client-Id`). Guarda el JSON crudo en `data/landing/`, aplánalo a filas (periodo, tipo de periodo, territorio_id, territorio_label, territorio_type, value) y cárgalo todo sin transformar en la base `raw` de ClickHouse. Añade un test de contrato que falle si cambian las claves `dims`/`values`/`dim0`/`dim1`/`value`. Añade una columna `_snapshot_date` y otra `_loaded_at`. Debe ser idempotente: si se recarga un snapshot ya cargado, se reemplaza y no se duplica. Declara las fuentes en `models/sources.yml` con `loaded_at_field` y un umbral de freshness.
 
 **Validar:** los conteos de filas por snapshot cuadran con los ficheros; si cargas dos veces, el conteo no cambia; `dbt source freshness` funciona.
 
 ## Fase 2 — Staging + tests (~3 h)
 
 **Prompt:**
-> Modelos `stg_airbnb__listings`, `stg_airbnb__calendar` y `stg_bcn__rent` como vistas. Hay que tipar, renombrar a snake_case y limpiar el precio (el texto "$1,234.00" pasa a Decimal). Crea un seed `seed_barrio_mapping.csv` que mapee los barrios de Inside Airbnb a los códigos de Open Data BCN. Tests: `unique` y `not_null` en las claves, `accepted_values` en room_type, `relationships` entre listings y el mapping, y un test propio que falle si más del 1 % de los anuncios no tiene barrio mapeado.
+> Modelos `stg_airbnb__listings`, `stg_airbnb__calendar` y `stg_bcn__rent` como vistas. Hay que tipar, renombrar a snake_case y limpiar el precio (el texto "$1,234.00" pasa a Decimal). Crea un seed `seed_barrio_mapping.csv` que mapee los barrios de Inside Airbnb a los ids `lBar...` de Barcelona Dades (73 barrios). Tests: `unique` y `not_null` en las claves, `accepted_values` en room_type, `relationships` entre listings y el mapping, y un test propio que falle si más del 1 % de los anuncios no tiene barrio mapeado.
 
 **Validar:** `dbt build --select staging` pasa en verde. Rompe a propósito una fila del seed y comprueba que el test falla.
 

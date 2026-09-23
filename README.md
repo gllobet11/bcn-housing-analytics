@@ -1,6 +1,6 @@
 # bcn-housing-analytics
 
-Pipeline ELT sobre datos abiertos de Barcelona (Inside Airbnb + alquiler medio Open Data BCN). Modelo dimensional en dbt + ClickHouse. Ver `kickoff.md` para el plan completo y `progress.md` para el registro de avance.
+Pipeline ELT sobre datos abiertos de Barcelona (Inside Airbnb + alquiler medio por barrio de Barcelona Dades). Modelo dimensional en dbt + ClickHouse. Ver `kickoff.md` para el plan completo y `progress.md` para el registro de avance.
 
 ## Requisitos
 

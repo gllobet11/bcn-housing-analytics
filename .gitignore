@@ -1,5 +1,6 @@
 .env
 .user.yml
+data/landing/
 target/
 dbt_packages/
 logs/

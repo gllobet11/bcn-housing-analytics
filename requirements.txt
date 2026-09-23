@@ -1,4 +1,6 @@
 dbt-clickhouse==1.8.*
+clickhouse-connect==1.9.*
+requests==2.34.*
 sqlfluff==3.*
 sqlfluff-templater-dbt==3.*
 ruff==0.6.*

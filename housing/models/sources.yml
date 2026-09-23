@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: "{{ env_var('CLICKHOUSE_SCHEMA', 'raw') }}"
+    loaded_at_field: "_loaded_at"
+    freshness:
+      warn_after: { count: 100, period: day }
+      error_after: { count: 130, period: day }
+    tables:
+      - name: airbnb_listings
+        description: >
+          Listings de Inside Airbnb Barcelona, snapshot trimestral, sin transformar.
+          Una fila por listing y snapshot (`_snapshot_date`).
+      - name: airbnb_calendar
+        description: >
+          Calendario diario de disponibilidad/precio de Inside Airbnb Barcelona,
+          snapshot trimestral, sin transformar. Grano: listing × fecha × snapshot.
+      - name: airbnb_neighbourhoods
+        description: >
+          Geometrías de barrios de Inside Airbnb (neighbourhoods.geojson), por snapshot.
+      - name: bcn_rent
+        description: >
+          Estadísticas de alquiler medio por barrio (Barcelona Dades / fianzas Incasòl),
+          aplanadas desde la API `statistic` (dims/values). Incluye `b37xv8wcjh` (€/mes)
+          y `5ibudgqbrb` (€/m²). `_snapshot_date` es la fecha de la extracción, no un
+          periodo del dato (eso vive en `period_id`/`period_type`).
+        freshness:
+          warn_after: { count: 7, period: day }
+          error_after: { count: 30, period: day }
