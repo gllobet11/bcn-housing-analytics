@@ -12,15 +12,15 @@
     -- "estado actual" contra la última fila registrada por listing_id, y solo
     -- puede haber un estado actual por listing en cada invocación.
     select
-        state.listing_id,
-        state.neighbourhood,
-        state.price,
-        state.room_type,
-        state.availability_365,
-        state._snapshot_date
-    from {{ ref('stg_airbnb__listings') }} as state
-    where state._snapshot_date = (
-        select max(recent._snapshot_date)
-        from {{ ref('stg_airbnb__listings') }} as recent
+        snap.listing_id,
+        snap.neighbourhood,
+        snap.price,
+        snap.room_type,
+        snap.availability_365,
+        snap._snapshot_date
+    from {{ ref('stg_airbnb__listings') }} as snap
+    where snap._snapshot_date = (
+        select max(newest._snapshot_date)
+        from {{ ref('stg_airbnb__listings') }} as newest
     )
 {% endsnapshot %}
