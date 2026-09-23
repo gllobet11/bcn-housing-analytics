@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+      - id: ruff-format
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.2.5
+    hooks:
+      - id: sqlfluff-lint
+        additional_dependencies: ["dbt-clickhouse", "sqlfluff-templater-dbt"]
+        files: \.sql$
+        args: ["--dialect", "clickhouse"]

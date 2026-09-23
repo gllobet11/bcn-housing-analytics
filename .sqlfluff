@@ -1,0 +1,9 @@
+[sqlfluff]
+templater = dbt
+dialect = clickhouse
+
+[sqlfluff:templater:dbt]
+project_dir = housing
+profiles_dir = .
+profile = housing
+target = dev

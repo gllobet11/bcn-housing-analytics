@@ -1,0 +1,5 @@
+dbt-clickhouse==1.8.*
+sqlfluff==3.*
+sqlfluff-templater-dbt==3.*
+ruff==0.6.*
+pre-commit==3.*
