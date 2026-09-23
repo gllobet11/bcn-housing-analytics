@@ -1,74 +1,74 @@
-airbnb_neighbourhood,barrio_id,barrio_label
-Baró de Viver,lBarBarodeViver,Baró de Viver
-Can Baró,lBarCanBaro,Can Baró
-Can Peguera,lBarCanPeguera,Can Peguera
-Canyelles,lBarCanyelles,Canyelles
-Ciutat Meridiana,lBarCiutatMeridiana,Ciutat Meridiana
-Diagonal Mar i el Front Marítim del Poblenou,lBarDiagonalMarielFrontMaritimdelPoblenou,Diagonal Mar i el Front Marítim del Poblenou
-Horta,lBarHorta,Horta
-Hostafrancs,lBarHostafrancs,Hostafrancs
-Montbau,lBarMontbau,Montbau
-Navas,lBarNavas,Navas
-Pedralbes,lBarPedralbes,Pedralbes
-Porta,lBarPorta,Porta
-Provençals del Poblenou,lBarProvencalsdelPoblenou,Provençals del Poblenou
-Sant Andreu,lBarSantAndreu,Sant Andreu
-Sant Antoni,lBarSantAntoni,Sant Antoni
-Sant Genís dels Agudells,lBarSantGenisdelsAgudells,Sant Genís dels Agudells
-Sant Gervasi - Galvany,lBarSantGervasiGalvany,Sant Gervasi - Galvany
-Sant Gervasi - la Bonanova,lBarSantGervasilaBonanova,Sant Gervasi - la Bonanova
-Sant Martí de Provençals,lBarSantMartideProvencals,Sant Martí de Provençals
-"Sant Pere, Santa Caterina i la Ribera",lBarSantPereSantaCaterinailaRibera,"Sant Pere, Santa Caterina i la Ribera"
-Sants,lBarSants,Sants
-Sants - Badal,lBarSantsBadal,Sants - Badal
-Sarrià,lBarSarria,Sarrià
-Torre Baró,lBarTorreBaro,Torre Baró
-Vallbona,lBarVallbona,Vallbona
-Vallcarca i els Penitents,lBarVallcarcaielsPenitents,Vallcarca i els Penitents
-"Vallvidrera, el Tibidabo i les Planes",lBarVallvidreraelTibidaboilesPlanes,"Vallvidrera, el Tibidabo i les Planes"
-Verdun,lBarVerdun,Verdun
-Vilapicina i la Torre Llobeta,lBarVilapicinailaTorreLlobeta,Vilapicina i la Torre Llobeta
-el Baix Guinardó,lBarelBaixGuinardo,el Baix Guinardó
-el Barri Gòtic,lBarelBarriGotic,el Barri Gòtic
-el Besòs i el Maresme,lBarelBesosielMaresme,el Besòs i el Maresme
-el Bon Pastor,lBarelBonPastor,el Bon Pastor
-el Camp d'en Grassot i Gràcia Nova,lBarelCampdenGrassotiGraciaNova,el Camp d'en Grassot i Gràcia Nova
-el Camp de l'Arpa del Clot,lBarelCampdelArpadelClot,el Camp de l'Arpa del Clot
-el Carmel,lBarelCarmel,el Carmel
-el Clot,lBarelClot,el Clot
-el Coll,lBarelColl,el Coll
-el Congrés i els Indians,lBarelCongresielsIndians,el Congrés i els Indians
-el Fort Pienc,lBarelFortPienc,el Fort Pienc
-el Guinardó,lBarelGuinardo,el Guinardó
-el Parc i la Llacuna del Poblenou,lBarelParcilaLlacunadelPoblenou,el Parc i la Llacuna del Poblenou
-el Poble Sec,lBarelPobleSecAEIParcMontjuic,el Poble Sec - AEI Parc Montjuïc
-el Poblenou,lBarelPoblenou,el Poblenou
-el Putxet i el Farró,lBarelPutxetielFarro,el Putxet i el Farró
-el Raval,lBarelRaval,el Raval
-el Turó de la Peira,lBarelTurodelaPeira,el Turó de la Peira
-l'Antiga Esquerra de l'Eixample,lBarlAntigaEsquerradelEixample,l'Antiga Esquerra de l'Eixample
-la Barceloneta,lBarlaBarceloneta,la Barceloneta
-la Bordeta,lBarlaBordeta,la Bordeta
-la Clota,lBarlaClota,la Clota
-la Dreta de l'Eixample,lBarlaDretadelEixample,la Dreta de l'Eixample
-la Font d'en Fargues,lBarlaFontdenFargues,la Font d'en Fargues
-la Font de la Guatlla,lBarlaFontdelaGuatlla,la Font de la Guatlla
-la Guineueta,lBarlaGuineueta,la Guineueta
-la Marina de Port,lBarlaMarinadePort,la Marina de Port
-la Marina del Prat Vermell,lBarlaMarinadelPratVermellAEIZonaFranca,la Marina del Prat Vermell - AEI Zona Franca
-la Maternitat i Sant Ramon,lBarlaMaternitatiSantRamon,la Maternitat i Sant Ramon
-la Nova Esquerra de l'Eixample,lBarlaNovaEsquerradelEixample,la Nova Esquerra de l'Eixample
-la Prosperitat,lBarlaProsperitat,la Prosperitat
-la Sagrada Família,lBarlaSagradaFamilia,la Sagrada Família
-la Sagrera,lBarlaSagrera,la Sagrera
-la Salut,lBarlaSalut,la Salut
-la Teixonera,lBarlaTeixonera,la Teixonera
-la Trinitat Nova,lBarlaTrinitatNova,la Trinitat Nova
-la Trinitat Vella,lBarlaTrinitatVella,la Trinitat Vella
-la Vall d'Hebron,lBarlaValldHebron,la Vall d'Hebron
-la Verneda i la Pau,lBarlaVernedailaPau,la Verneda i la Pau
-la Vila Olímpica del Poblenou,lBarlaVilaOlimpicadelPoblenou,la Vila Olímpica del Poblenou
-la Vila de Gràcia,lBarlaViladeGracia,la Vila de Gràcia
-les Corts,lBarlesCorts,les Corts
-les Roquetes,lBarlesRoquetes,les Roquetes
-les Tres Torres,lBarlesTresTorres,les Tres Torres
+airbnb_neighbourhood,barrio_id,barrio_label,distrito_id,distrito_label
+Baró de Viver,lBarBarodeViver,Baró de Viver,lDisSantAndreu,Sant Andreu
+Can Baró,lBarCanBaro,Can Baró,lDisHortaGuinardo,Horta-Guinardó
+Can Peguera,lBarCanPeguera,Can Peguera,lDisNouBarris,Nou Barris
+Canyelles,lBarCanyelles,Canyelles,lDisNouBarris,Nou Barris
+Ciutat Meridiana,lBarCiutatMeridiana,Ciutat Meridiana,lDisNouBarris,Nou Barris
+Diagonal Mar i el Front Marítim del Poblenou,lBarDiagonalMarielFrontMaritimdelPoblenou,Diagonal Mar i el Front Marítim del Poblenou,lDisSantMarti,Sant Martí
+Horta,lBarHorta,Horta,lDisHortaGuinardo,Horta-Guinardó
+Hostafrancs,lBarHostafrancs,Hostafrancs,lDisSantsMontjuic,Sants-Montjuïc
+Montbau,lBarMontbau,Montbau,lDisHortaGuinardo,Horta-Guinardó
+Navas,lBarNavas,Navas,lDisSantAndreu,Sant Andreu
+Pedralbes,lBarPedralbes,Pedralbes,lDisLesCorts,Les Corts
+Porta,lBarPorta,Porta,lDisNouBarris,Nou Barris
+Provençals del Poblenou,lBarProvencalsdelPoblenou,Provençals del Poblenou,lDisSantMarti,Sant Martí
+Sant Andreu,lBarSantAndreu,Sant Andreu,lDisSantAndreu,Sant Andreu
+Sant Antoni,lBarSantAntoni,Sant Antoni,lDisEixample,Eixample
+Sant Genís dels Agudells,lBarSantGenisdelsAgudells,Sant Genís dels Agudells,lDisHortaGuinardo,Horta-Guinardó
+Sant Gervasi - Galvany,lBarSantGervasiGalvany,Sant Gervasi - Galvany,lDisSarriaSantGervasi,Sarrià-Sant Gervasi
+Sant Gervasi - la Bonanova,lBarSantGervasilaBonanova,Sant Gervasi - la Bonanova,lDisSarriaSantGervasi,Sarrià-Sant Gervasi
+Sant Martí de Provençals,lBarSantMartideProvencals,Sant Martí de Provençals,lDisSantMarti,Sant Martí
+"Sant Pere, Santa Caterina i la Ribera",lBarSantPereSantaCaterinailaRibera,"Sant Pere, Santa Caterina i la Ribera",lDisCiutatVella,Ciutat Vella
+Sants,lBarSants,Sants,lDisSantsMontjuic,Sants-Montjuïc
+Sants - Badal,lBarSantsBadal,Sants - Badal,lDisSantsMontjuic,Sants-Montjuïc
+Sarrià,lBarSarria,Sarrià,lDisSarriaSantGervasi,Sarrià-Sant Gervasi
+Torre Baró,lBarTorreBaro,Torre Baró,lDisNouBarris,Nou Barris
+Vallbona,lBarVallbona,Vallbona,lDisNouBarris,Nou Barris
+Vallcarca i els Penitents,lBarVallcarcaielsPenitents,Vallcarca i els Penitents,lDisGracia,Gràcia
+"Vallvidrera, el Tibidabo i les Planes",lBarVallvidreraelTibidaboilesPlanes,"Vallvidrera, el Tibidabo i les Planes",lDisSarriaSantGervasi,Sarrià-Sant Gervasi
+Verdun,lBarVerdun,Verdun,lDisNouBarris,Nou Barris
+Vilapicina i la Torre Llobeta,lBarVilapicinailaTorreLlobeta,Vilapicina i la Torre Llobeta,lDisNouBarris,Nou Barris
+el Baix Guinardó,lBarelBaixGuinardo,el Baix Guinardó,lDisHortaGuinardo,Horta-Guinardó
+el Barri Gòtic,lBarelBarriGotic,el Barri Gòtic,lDisCiutatVella,Ciutat Vella
+el Besòs i el Maresme,lBarelBesosielMaresme,el Besòs i el Maresme,lDisSantMarti,Sant Martí
+el Bon Pastor,lBarelBonPastor,el Bon Pastor,lDisSantAndreu,Sant Andreu
+el Camp d'en Grassot i Gràcia Nova,lBarelCampdenGrassotiGraciaNova,el Camp d'en Grassot i Gràcia Nova,lDisGracia,Gràcia
+el Camp de l'Arpa del Clot,lBarelCampdelArpadelClot,el Camp de l'Arpa del Clot,lDisSantMarti,Sant Martí
+el Carmel,lBarelCarmel,el Carmel,lDisHortaGuinardo,Horta-Guinardó
+el Clot,lBarelClot,el Clot,lDisSantMarti,Sant Martí
+el Coll,lBarelColl,el Coll,lDisGracia,Gràcia
+el Congrés i els Indians,lBarelCongresielsIndians,el Congrés i els Indians,lDisSantAndreu,Sant Andreu
+el Fort Pienc,lBarelFortPienc,el Fort Pienc,lDisEixample,Eixample
+el Guinardó,lBarelGuinardo,el Guinardó,lDisHortaGuinardo,Horta-Guinardó
+el Parc i la Llacuna del Poblenou,lBarelParcilaLlacunadelPoblenou,el Parc i la Llacuna del Poblenou,lDisSantMarti,Sant Martí
+el Poble Sec,lBarelPobleSecAEIParcMontjuic,el Poble Sec - AEI Parc Montjuïc,lDisSantsMontjuic,Sants-Montjuïc
+el Poblenou,lBarelPoblenou,el Poblenou,lDisSantMarti,Sant Martí
+el Putxet i el Farró,lBarelPutxetielFarro,el Putxet i el Farró,lDisSarriaSantGervasi,Sarrià-Sant Gervasi
+el Raval,lBarelRaval,el Raval,lDisCiutatVella,Ciutat Vella
+el Turó de la Peira,lBarelTurodelaPeira,el Turó de la Peira,lDisNouBarris,Nou Barris
+l'Antiga Esquerra de l'Eixample,lBarlAntigaEsquerradelEixample,l'Antiga Esquerra de l'Eixample,lDisEixample,Eixample
+la Barceloneta,lBarlaBarceloneta,la Barceloneta,lDisCiutatVella,Ciutat Vella
+la Bordeta,lBarlaBordeta,la Bordeta,lDisSantsMontjuic,Sants-Montjuïc
+la Clota,lBarlaClota,la Clota,lDisHortaGuinardo,Horta-Guinardó
+la Dreta de l'Eixample,lBarlaDretadelEixample,la Dreta de l'Eixample,lDisEixample,Eixample
+la Font d'en Fargues,lBarlaFontdenFargues,la Font d'en Fargues,lDisHortaGuinardo,Horta-Guinardó
+la Font de la Guatlla,lBarlaFontdelaGuatlla,la Font de la Guatlla,lDisSantsMontjuic,Sants-Montjuïc
+la Guineueta,lBarlaGuineueta,la Guineueta,lDisNouBarris,Nou Barris
+la Marina de Port,lBarlaMarinadePort,la Marina de Port,lDisSantsMontjuic,Sants-Montjuïc
+la Marina del Prat Vermell,lBarlaMarinadelPratVermellAEIZonaFranca,la Marina del Prat Vermell - AEI Zona Franca,lDisSantsMontjuic,Sants-Montjuïc
+la Maternitat i Sant Ramon,lBarlaMaternitatiSantRamon,la Maternitat i Sant Ramon,lDisLesCorts,Les Corts
+la Nova Esquerra de l'Eixample,lBarlaNovaEsquerradelEixample,la Nova Esquerra de l'Eixample,lDisEixample,Eixample
+la Prosperitat,lBarlaProsperitat,la Prosperitat,lDisNouBarris,Nou Barris
+la Sagrada Família,lBarlaSagradaFamilia,la Sagrada Família,lDisEixample,Eixample
+la Sagrera,lBarlaSagrera,la Sagrera,lDisSantAndreu,Sant Andreu
+la Salut,lBarlaSalut,la Salut,lDisGracia,Gràcia
+la Teixonera,lBarlaTeixonera,la Teixonera,lDisHortaGuinardo,Horta-Guinardó
+la Trinitat Nova,lBarlaTrinitatNova,la Trinitat Nova,lDisNouBarris,Nou Barris
+la Trinitat Vella,lBarlaTrinitatVella,la Trinitat Vella,lDisSantAndreu,Sant Andreu
+la Vall d'Hebron,lBarlaValldHebron,la Vall d'Hebron,lDisHortaGuinardo,Horta-Guinardó
+la Verneda i la Pau,lBarlaVernedailaPau,la Verneda i la Pau,lDisSantMarti,Sant Martí
+la Vila Olímpica del Poblenou,lBarlaVilaOlimpicadelPoblenou,la Vila Olímpica del Poblenou,lDisSantMarti,Sant Martí
+la Vila de Gràcia,lBarlaViladeGracia,la Vila de Gràcia,lDisGracia,Gràcia
+les Corts,lBarlesCorts,les Corts,lDisLesCorts,Les Corts
+les Roquetes,lBarlesRoquetes,les Roquetes,lDisNouBarris,Nou Barris
+les Tres Torres,lBarlesTresTorres,les Tres Torres,lDisSarriaSantGervasi,Sarrià-Sant Gervasi

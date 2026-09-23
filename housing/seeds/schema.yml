@@ -20,3 +20,9 @@ seeds:
         data_tests:
           - unique
           - not_null
+      - name: distrito_id
+        data_tests:
+          - not_null
+      - name: distrito_label
+        data_tests:
+          - not_null

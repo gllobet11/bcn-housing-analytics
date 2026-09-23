@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: dim_geography
+    description: >
+      Grano: un barrio de Barcelona (73 filas). Jerarquía ciudad > distrito > barrio,
+      con el nombre de Inside Airbnb y el id/label de Barcelona Dades.
+    columns:
+      - name: barrio_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_property_type
+    description: >
+      Grano: una combinación única de property_type x room_type de Inside Airbnb.
+    columns:
+      - name: property_type_id
+        data_tests:
+          - unique
+          - not_null
+
+  - name: dim_date
+    description: "Grano: un día, del 2014-01-01 al 2027-12-31."
+    columns:
+      - name: date_day
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fct_rent_quarter
+    description: >
+      Grano: barrio x trimestre. Alquiler medio €/mes y €/m² de Barcelona Dades,
+      solo territorio Barri y periodo Trimestre.
+    columns:
+      - name: barrio_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_geography')
+              field: barrio_id
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [barrio_id, quarter_start]
+
+  - name: fct_listing_snapshot
+    description: "Grano: listing x snapshot trimestral de Inside Airbnb."
+    columns:
+      - name: listing_id
+        data_tests:
+          - not_null
+      - name: barrio_id
+        data_tests:
+          - relationships:
+              to: ref('dim_geography')
+              field: barrio_id
+      - name: property_type_id
+        data_tests:
+          - relationships:
+              to: ref('dim_property_type')
+              field: property_type_id
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, snapshot_date]
+
+  - name: mart_barrio_quarter
+    description: >
+      Grano: barrio x trimestre. KPIs de negocio: anuncios activos, % de alojamiento
+      entero, precio medio por noche, alquiler medio €/mes y €/m², y variación
+      trimestral (QoQ) de cada uno.
+    columns:
+      - name: barrio_id
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [barrio_id, quarter_start]
