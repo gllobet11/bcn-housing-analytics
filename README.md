@@ -27,6 +27,16 @@ dbt debug
 
 `dbt debug` debe terminar con "All checks passed!".
 
+## Orquestación con Airflow
+
+```bash
+echo "AIRFLOW_UID=$(id -u)" >> .env
+docker compose up -d airflow-postgres airflow-init
+docker compose up -d airflow-webserver airflow-scheduler
+```
+
+UI en http://localhost:8080 (usuario/contraseña `admin`/`admin`). El DAG `housing_pipeline` corre `ingest_raw` → los modelos dbt (una task por modelo vía Cosmos, con sus tests) → `dbt source freshness`, con `schedule="@quarterly"` y `catchup=False`.
+
 ## Calidad de código
 
 ```bash

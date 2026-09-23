@@ -1,0 +1,4 @@
+dbt-clickhouse==1.8.*
+clickhouse-connect==1.9.*
+requests==2.34.*
+astronomer-cosmos==1.*
