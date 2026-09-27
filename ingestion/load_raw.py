@@ -2,7 +2,7 @@
 de Barcelona Dades, y las carga sin transformar en la base `raw` de ClickHouse.
 
 Uso:
-    python ingestion/load_raw.py [--only airbnb|rent]
+    python ingestion/load_raw.py [--only airbnb|rent|hut]
 
 Idempotente: recargar un snapshot ya cargado reemplaza sus filas (DROP PARTITION
 + INSERT) sin duplicar.
@@ -13,10 +13,13 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import io
 import json
 import logging
 import os
-from datetime import date, datetime, timezone
+import re
+import zipfile
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
 
@@ -41,6 +44,12 @@ BCN_RENT_STATS = {
     "b37xv8wcjh": "rent_price_monthly",  # €/mes
     "5ibudgqbrb": "rent_price_per_m2",  # €/m²
 }
+
+# Registro municipal de viviendas de uso turístico (HUT), un fichero por trimestre.
+BCN_HUT_PACKAGE = (
+    "https://opendata-ajuntament.barcelona.cat/data/api/3/action/package_show"
+    "?id=habitatges-us-turistic"
+)
 
 CLICKHOUSE_DB = os.environ.get("CLICKHOUSE_DB", "raw")
 
@@ -290,9 +299,132 @@ def load_rent(client) -> None:
         load_rent_stat(client, stat_id, snapshot_date)
 
 
+def _hut_snapshot_date(resource: dict) -> str:
+    """'2026_1T_...' -> cierre del trimestre (2026-03-31); el fichero vigente
+    (sin trimestre en el nombre) -> su fecha de publicación."""
+    m = re.match(r"(\d{4})_(\d)T", resource["name"])
+    if not m:
+        return resource["last_modified"][:10]
+    year, quarter = int(m[1]), int(m[2])
+    next_quarter = date(year + quarter // 4, quarter % 4 * 3 + 1, 1)
+    return (next_quarter - timedelta(days=1)).isoformat()
+
+
+# nombres de columna que cambiaron entre trimestres -> nombre actual
+_HUT_HEADER_ALIASES = {"DISTRICTE": "NOM_DISTRICTE", "BARRI": "NOM_BARRI"}
+_HUT_ID = re.compile(r"^(HUTB-?\d+)?$")
+_COORD = re.compile(r"^(-?\d+([.,]\d+)?)?$")
+
+
+def _hut_row_ok(header: list[str], row: list[str]) -> bool:
+    if len(row) != len(header):
+        return False
+    cell = dict(zip(header, row))
+    return bool(_HUT_ID.match(cell.get("NUMERO_REGISTRE_GENERALITAT", ""))) and all(
+        _COORD.match(cell.get(c, "")) for c in ("LONGITUD_X", "LATITUD_Y")
+    )
+
+
+def _repair_hut_row(header: list[str], line: str, row: list[str]) -> list[str] | None:
+    """Repara las filas mal alineadas del histórico. Cada regla sale de un caso
+    real (ver progress.md); si ninguna deja una fila válida, se descarta."""
+    candidates = [
+        # líneas enteras con ';' y coma decimal dentro de un fichero con ',' (2021T3)
+        line.split(";"),
+        # ',' y ';' mezclados en la misma línea (2022T1-T3)
+        re.split(r"[,;]", line),
+    ]
+    # comas sin comillas en el nombre de barrio ("Sant Pere, Santa Caterina...")
+    extra = len(row) - len(header)
+    if extra > 0 and "NOM_BARRI" in header:
+        i = header.index("NOM_BARRI")
+        candidates.append(
+            row[:i] + [",".join(row[i : i + extra + 1])] + row[i + extra + 1 :]
+        )
+    for cand in candidates:
+        cand = [c.strip() for c in cand]
+        if _hut_row_ok(header, cand):
+            return cand
+    return None
+
+
+def _read_hut_csv(path: Path) -> tuple[list[str], list[list[str]], int, int]:
+    """El histórico del Ajuntament no es homogéneo: .csv o .zip, utf-8 o latin-1,
+    separador ',' o ';', y filas mal alineadas. Devuelve cabecera, filas válidas,
+    nº de filas reparadas y nº de descartadas."""
+    raw = path.read_bytes()
+    if raw[:2] == b"PK":
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            raw = z.read(z.namelist()[0])
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("latin-1")
+    lines = [line for line in text.splitlines() if line.strip()]
+    dialect = csv.Sniffer().sniff(lines[0], delimiters=",;")
+    header = next(csv.reader([lines[0]], dialect))
+    # cabecera sin salto de línea antes de la primera fila (2023T1, 2023T3):
+    # "...,LATITUD_Y01-2013-0753,1,CIUTAT VELLA,..."
+    glued = next(
+        (
+            i
+            for i, c in enumerate(header)
+            if c.startswith("LATITUD_Y") and c != "LATITUD_Y"
+        ),
+        None,
+    )
+    if glued is not None:
+        first = [header[glued][len("LATITUD_Y") :]] + header[glued + 1 :]
+        header = header[:glued] + ["LATITUD_Y"]
+        lines[0] = dialect.delimiter.join(first)
+    else:
+        lines = lines[1:]
+    header = [_HUT_HEADER_ALIASES.get(c, c) for c in header]
+
+    rows, repaired, dropped = [], 0, 0
+    for line in lines:
+        row = next(csv.reader([line], dialect))
+        if len(row) == len(header):
+            rows.append(row)
+            continue
+        fixed = _repair_hut_row(header, line, row)
+        if fixed is None:
+            dropped += 1
+        else:
+            rows.append(fixed)
+            repaired += 1
+    return header, rows, repaired, dropped
+
+
+def load_hut_registry(client) -> None:
+    resp = requests.get(BCN_HUT_PACKAGE, timeout=30)
+    resp.raise_for_status()
+    for resource in resp.json()["result"]["resources"]:
+        snapshot_date = _hut_snapshot_date(resource)
+        # la fecha va en el nombre: el fichero vigente se republica con la misma URL
+        path = _download(
+            resource["url"], LANDING / "bcn_hut" / f"{snapshot_date}_{resource['name']}"
+        )
+        header, rows, repaired, dropped = _read_hut_csv(path)
+        # antes de 2020T4 (y en 2024T2) no se publica el nº de registro: sin él no
+        # hay cruce posible con los anuncios.
+        if "NUMERO_REGISTRE_GENERALITAT" not in header:
+            log.warning("bcn_hut %s: sin nº de registro, se omite", resource["name"])
+            continue
+        if repaired or dropped:
+            log.warning(
+                "bcn_hut %s: %d filas reparadas, %d descartadas",
+                resource["name"],
+                repaired,
+                dropped,
+            )
+        n = _replace_partition(client, "bcn_hut_registry", snapshot_date, header, rows)
+        log.info("bcn_hut_registry %s: %d filas", snapshot_date, n)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", choices=["airbnb", "rent"], default=None)
+    parser.add_argument("--only", choices=["airbnb", "rent", "hut"], default=None)
     args = parser.parse_args()
 
     client = get_client()
@@ -302,6 +434,8 @@ def main() -> None:
         load_airbnb(client)
     if args.only in (None, "rent"):
         load_rent(client)
+    if args.only in (None, "hut"):
+        load_hut_registry(client)
 
 
 if __name__ == "__main__":

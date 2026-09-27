@@ -51,3 +51,22 @@ models:
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [stat_id, period_id, territory_id]
+
+  - name: stg_bcn__hut_registry
+    description: >
+      Un expediente del registro municipal de HUT por snapshot trimestral, con columnas
+      unificadas entre formatos. Incluye expedientes sin nº HUTB (2023T4).
+    columns:
+      - name: expediente
+        data_tests:
+          - not_null
+      - name: longitude
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 2.0
+              max_value: 2.3
+      - name: latitude
+        data_tests:
+          - dbt_utils.accepted_range:
+              min_value: 41.3
+              max_value: 41.5

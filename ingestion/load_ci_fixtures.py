@@ -18,6 +18,7 @@ from load_raw import (
     CLICKHOUSE_DB,
     _flatten_dim_tree,
     _read_csv_gz,
+    _read_hut_csv,
     _replace_partition,
     _validate_rent_contract,
     get_client,
@@ -113,11 +114,22 @@ def load_rent_fixtures(client) -> None:
         print(f"bcn_rent[{stat_id}] {CI_SNAPSHOT}: {n} filas (fixture)")
 
 
+def load_hut_fixtures(client) -> None:
+    # fecha del fichero vigente muestreado: anterior a CI_SNAPSHOT, así
+    # fct_listing_license encuentra un registro "vigente" contra el que cruzar.
+    for path in sorted((FIXTURES / "bcn_hut").glob("*.csv")):
+        snapshot_date = path.name[:10]
+        header, rows, _, _ = _read_hut_csv(path)
+        n = _replace_partition(client, "bcn_hut_registry", snapshot_date, header, rows)
+        print(f"bcn_hut_registry {snapshot_date}: {n} filas (fixture)")
+
+
 def main() -> None:
     client = get_client()
     client.command(f"CREATE DATABASE IF NOT EXISTS `{CLICKHOUSE_DB}`")
     load_airbnb_fixtures(client)
     load_rent_fixtures(client)
+    load_hut_fixtures(client)
 
 
 if __name__ == "__main__":

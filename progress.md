@@ -116,3 +116,23 @@ Registro por fase: qué se hizo, decisiones tomadas (y por qué), errores encont
 - **Snapshot 2025-12-14 sin precio**: no es un bug nuestro. Inside Airbnb publicó ese snapshot con `price` y `estimated_revenue_l365d` vacíos en el 100 % de filas, y el `calendar.csv.gz` de ese snapshot tampoco trae precio. `precio_medio_noche` de 2025T4 queda NULL en `mart_barrio_quarter`.
 - **`fct_price_changes` vacío / mal fechado**: (1) `snp_listings` solo se había ejecutado una vez; se añade la var opcional `snapshot_date` para reproducir el histórico en orden (`dbt snapshot --vars "{snapshot_date: 'YYYY-MM-DD'}"` por cada snapshot, empezando con `snp_listings` vacía); (2) con `strategy='check'`, `dbt_valid_from` es la hora de ejecución de dbt, no la del dato: `changed_at` pasa a salir de `_snapshot_date`; (3) las filas sin precio (dic-2025) cortaban la comparación sep→mar: se excluyen antes del `lagInFrame` para comparar contra el último precio conocido.
 - Validado: `raw` con 19.410/18.177/16.107/15.293 listings por snapshot; `dbt build --full-refresh` 51/51 + tests de `snp_listings` 3/3; `fct_price_changes` con 9.909 cambios (2026-03-21) y 10.369 (2026-06-24); `pre-commit run --all-files` en verde.
+
+## Registro municipal de viviendas de uso turístico (HUT) (2026-09-27)
+- Qué se hizo: nueva fuente `raw.bcn_hut_registry` (Open Data BCN `habitatges-us-turistic`, CC BY 4.0), cargada por `load_raw.py --only hut` con un snapshot por fichero trimestral. Modelos `stg_bcn__hut_registry`, `fct_hut_registry` (licencia × trimestre) y `fct_listing_license` (anuncio × snapshot: licencia clasificada y contrastada con el registro vigente en esa fecha). `seed_barrio_mapping` gana `codi_barri` y `nom_barri_oficial` (del dataset oficial `20170706-districtes-barris`). Fixture de 200 filas en `data/fixtures/bcn_hut/` (incluye los 50 HUTB de las fixtures de listings que existen en el registro).
+- Decisiones:
+  - Se elige el registro del Ajuntament y no el de la Generalitat (`t2h3-cgys`): trae coordenadas, barrio y nº de plazas, tiene histórico trimestral y no incluye nombre y apellidos del titular.
+  - Unión con los barrios por el código oficial `CODI_BARRI`, no por nombre (el registro escribe "Sant Pere Santa Caterina i la Ribera" sin coma). Antes de 2022T4 no viene el código: respaldo por nombre normalizado (NFKD, solo letras) contra `nom_barri_oficial`.
+  - Solo se cargan ficheros con nº HUTB (desde 2020T4, sin 2024T2): sin él no hay cruce posible con los anuncios.
+  - El registro "vigente" para cada snapshot de Airbnb es el último publicado antes de esa fecha (`registry_as_of`). No se usa ASOF JOIN por `hutb_num` porque encontraría la última aparición de una licencia ya dada de baja.
+  - `_snapshot_date` del registro = cierre del trimestre del nombre del fichero; el fichero vigente usa su fecha de publicación y se guarda en landing con esa fecha en el nombre (se republica con la misma URL).
+- Errores encontrados (el origen no es homogéneo; se reparan en `_read_hut_csv`/`_repair_hut_row`, validando cada fila reparada por formato de HUTB y coordenadas):
+  - `2023T1`/`2023T3`: cabecera sin salto de línea antes de la primera fila (`...,LATITUD_Y01-2013-0753,...`).
+  - `2022T1`-`T3`: `,` y `;` mezclados dentro de la misma línea (siempre 18 separadores en total).
+  - `2021T3`: 20 líneas enteras con `;` y coma decimal dentro de un fichero con `,`.
+  - Comas sin comillas en "Sant Pere, Santa Caterina i la Ribera" (~160 filas por trimestre en 2023).
+  - `2022T4` separado por `;` (Sniffer); `2020T1`/`T2` en latin-1; nombres de columna distintos entre trimestres (`DISTRICTE`/`BARRI` → `NOM_*`, unificados en la ingesta para que CI, que solo carga el formato actual, tenga el mismo esquema).
+  - `2023T4`: ~4.200 filas de relleno sin expediente, sin HUTB y con la misma coordenada fuera de Barcelona; se filtran en staging (quedan en `raw`).
+  - Resultado: 20 trimestres cargados, 3 filas descartadas de ~190.000.
+  - Sorting key `Nullable` (`hutb_num`) y alias explícitos tras JOIN en `fct_listing_license`: mismos problemas de ClickHouse 24.8 que en las fases 3-4.
+- Hallazgo validado: en el snapshot 2026-06-24, 2.967 de 7.415 anuncios con HUTB no están en el registro municipal vigente. No es un fallo del cruce: 1.808 declaran un número imposible (0 o mayor que el máximo emitido por la Generalitat, HUTB-079999), 1.120 un número válido que no es de Barcelona (muestra contra la Generalitat: Sitges, Cubelles, Santa Susanna…) y 39 una licencia de Barcelona ya dada de baja.
+- Validado: `dbt build --full-refresh` 63/63 (1 warn: 114 licencias sin barrio en el origen); `dbt build --target ci` 68/68 sobre fixtures; `pre-commit run --all-files` en verde.
