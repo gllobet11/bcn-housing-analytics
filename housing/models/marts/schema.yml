@@ -103,6 +103,9 @@ models:
       - name: hutb_num
         data_tests:
           - not_null
+          # 0 = expediente sin nº HUTB colado por el coalesce de la sorting key
+          - dbt_utils.accepted_range:
+              min_value: 1
       - name: barrio_id
         data_tests:
           # ~0,1 % de expedientes vienen sin código ni nombre de barrio
@@ -139,3 +142,46 @@ models:
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [listing_id, snapshot_date]
+
+  - name: fct_hut_registry_barrio
+    description: >
+      Grano: barrio x snapshot trimestral del registro municipal de HUT (2018T2 -> hoy).
+      `expedientes` cuenta todas las licencias (también los trimestres sin nº HUTB);
+      `plazas` solo existe desde 2020T3.
+    columns:
+      - name: barrio_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_geography')
+              field: barrio_id
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [barrio_id, snapshot_date]
+
+  - name: fct_tourist_dwellings_district
+    description: >
+      Grano: distrito municipal de Barcelona x periodo del INE (viviendas turísticas
+      anunciadas en Airbnb, Booking y Vrbo, deduplicadas por el INE).
+    columns:
+      - name: distrito_id
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [distrito_id, periodo]
+
+  - name: fct_rent_district_quarter
+    description: >
+      Grano: distrito x trimestre. Alquiler medio €/mes y €/m² oficial del distrito
+      (Barcelona Dades, territorio Districte, periodo Trimestre, desde 2000).
+    columns:
+      - name: distrito_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('seed_barrio_mapping')
+              field: distrito_id
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [distrito_id, quarter_start]

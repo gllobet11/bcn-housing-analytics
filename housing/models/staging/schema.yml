@@ -70,3 +70,13 @@ models:
           - dbt_utils.accepted_range:
               min_value: 41.3
               max_value: 41.5
+
+  - name: stg_ine__tourist_dwellings
+    description: Viviendas turísticas por distrito censal de España y periodo (INE).
+    columns:
+      - name: distrito_ine
+        data_tests:
+          - not_null
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [distrito_ine, periodo]

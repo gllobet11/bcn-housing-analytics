@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: int_hut_registry__located
+    description: >
+      Grano: expediente del registro municipal de HUT x snapshot, con `barrio_id`
+      resuelto por código oficial o, si falta, por nombre normalizado (con `?` como
+      comodín en 2020T1-T2, que perdieron los acentos en el origen).
+    columns:
+      - name: expediente
+        data_tests:
+          - not_null
+      - name: barrio_id
+        data_tests:
+          # ~0,1 % de expedientes vienen sin código ni nombre de barrio
+          - not_null:
+              config:
+                severity: warn

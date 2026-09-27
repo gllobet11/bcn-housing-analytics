@@ -10,6 +10,7 @@ Uso:
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 
@@ -124,12 +125,25 @@ def load_hut_fixtures(client) -> None:
         print(f"bcn_hut_registry {snapshot_date}: {n} filas (fixture)")
 
 
+def load_ine_fixtures(client) -> None:
+    # CSV con las filas de Barcelona ya extraídas del Excel del INE (cabeceras
+    # normalizadas igual que _read_ine_districts): CI no necesita openpyxl.
+    for path in sorted((FIXTURES / "ine").glob("*.csv")):
+        with path.open(encoding="utf-8", newline="") as f:
+            reader = csv.reader(f)
+            header = next(reader)
+            rows = list(reader)
+        n = _replace_partition(client, "ine_tourist_dwellings", path.stem, header, rows)
+        print(f"ine_tourist_dwellings {path.stem}: {n} filas (fixture)")
+
+
 def main() -> None:
     client = get_client()
     client.command(f"CREATE DATABASE IF NOT EXISTS `{CLICKHOUSE_DB}`")
     load_airbnb_fixtures(client)
     load_rent_fixtures(client)
     load_hut_fixtures(client)
+    load_ine_fixtures(client)
 
 
 if __name__ == "__main__":
