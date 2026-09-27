@@ -28,3 +28,10 @@ sources:
         freshness:
           warn_after: { count: 7, period: day }
           error_after: { count: 30, period: day }
+      - name: bcn_hut_registry
+        description: >
+          Registro municipal de viviendas de uso turístico (HUT) de Open Data BCN
+          (`habitatges-us-turistic`), un fichero por trimestre desde 2020T4 (antes no
+          se publica el nº HUTB). `_snapshot_date` es el cierre del trimestre, o la
+          fecha de publicación para el fichero vigente. Filas mal alineadas del
+          origen reparadas en la ingesta (ver `_repair_hut_row`).

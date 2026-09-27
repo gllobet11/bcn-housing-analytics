@@ -93,3 +93,49 @@ models:
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [barrio_id, quarter_start]
+
+  - name: fct_hut_registry
+    description: >
+      Grano: licencia HUT (nº HUTB) x snapshot trimestral del registro municipal.
+      `barrio_id` por código oficial de barrio o, si el trimestre no lo trae, por
+      nombre normalizado.
+    columns:
+      - name: hutb_num
+        data_tests:
+          - not_null
+      - name: barrio_id
+        data_tests:
+          # ~0,1 % de expedientes vienen sin código ni nombre de barrio
+          - not_null:
+              config:
+                severity: warn
+          - relationships:
+              to: ref('dim_geography')
+              field: barrio_id
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [snapshot_date, hutb_num]
+
+  - name: fct_listing_license
+    description: >
+      Grano: listing x snapshot de Inside Airbnb. Licencia declarada clasificada
+      (`license_type`) y, para los HUTB, contraste con el registro municipal vigente
+      en esa fecha: si existe, si está en el mismo barrio, distancia, plazas, y
+      cuántos anuncios y hosts comparten el mismo nº.
+    columns:
+      - name: listing_id
+        data_tests:
+          - not_null
+      - name: license_type
+        data_tests:
+          - accepted_values:
+              values:
+                - hutb
+                - registro_nacional_turistico
+                - registro_nacional_no_turistico
+                - exempt
+                - sin_licencia
+                - otra
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [listing_id, snapshot_date]
