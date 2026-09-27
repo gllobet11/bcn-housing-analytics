@@ -14,11 +14,16 @@ with history as (
         -- sorting key.
         coalesce(listing_id, 0) as listing_id,
         price,
-        dbt_valid_from as changed_at,
+        -- _snapshot_date y no dbt_valid_from: con strategy='check',
+        -- dbt_valid_from es la hora de ejecución de dbt, no la del dato.
+        _snapshot_date as changed_at,
         lagInFrame(price) over (
-            partition by listing_id order by dbt_valid_from
+            partition by listing_id order by _snapshot_date
         ) as previous_price
     from {{ ref('snp_listings') }}
+    -- sin precio no hay cambio que medir (el snapshot 2025-12-14 de Inside
+    -- Airbnb viene sin price): se compara contra el último precio conocido.
+    where price is not null
 )
 
 select
