@@ -2,7 +2,7 @@
 de Barcelona Dades, y las carga sin transformar en la base `raw` de ClickHouse.
 
 Uso:
-    python ingestion/load_raw.py [--only airbnb|rent|hut]
+    python ingestion/load_raw.py [--only airbnb|rent|hut|ine]
 
 Idempotente: recargar un snapshot ya cargado reemplaza sus filas (DROP PARTITION
 + INSERT) sin duplicar.
@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import zipfile
+from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterable
@@ -50,6 +51,11 @@ BCN_HUT_PACKAGE = (
     "https://opendata-ajuntament.barcelona.cat/data/api/3/action/package_show"
     "?id=habitatges-us-turistic"
 )
+
+# INE, estadística experimental de viviendas turísticas: un Excel por periodo con
+# resultados por distrito censal (hoja 2) de toda España.
+INE_VIV_TURISTICA = "https://www.ine.es/experimental/viv_turistica/"
+_INE_MESES = {"FEB": 2, "MAY": 5, "AGO": 8, "NOV": 11}
 
 CLICKHOUSE_DB = os.environ.get("CLICKHOUSE_DB", "raw")
 
@@ -313,7 +319,18 @@ def _hut_snapshot_date(resource: dict) -> str:
 # nombres de columna que cambiaron entre trimestres -> nombre actual
 _HUT_HEADER_ALIASES = {"DISTRICTE": "NOM_DISTRICTE", "BARRI": "NOM_BARRI"}
 _HUT_ID = re.compile(r"^(HUTB-?\d+)?$")
-_COORD = re.compile(r"^(-?\d+([.,]\d+)?)?$")
+# caja de Barcelona: una columna desplazada deja un número fuera de rango
+_BCN_BOUNDS = {"LONGITUD_X": (2.0, 2.3), "LATITUD_Y": (41.3, 41.5)}
+
+
+def _coord_ok(value: str, col: str) -> bool:
+    if not value:
+        return True
+    try:
+        lo, hi = _BCN_BOUNDS[col]
+        return lo <= float(value.replace(",", ".")) <= hi
+    except ValueError:
+        return False
 
 
 def _hut_row_ok(header: list[str], row: list[str]) -> bool:
@@ -321,8 +338,32 @@ def _hut_row_ok(header: list[str], row: list[str]) -> bool:
         return False
     cell = dict(zip(header, row))
     return bool(_HUT_ID.match(cell.get("NUMERO_REGISTRE_GENERALITAT", ""))) and all(
-        _COORD.match(cell.get(c, "")) for c in ("LONGITUD_X", "LATITUD_Y")
+        _coord_ok(cell.get(c, ""), c) for c in _BCN_BOUNDS
     )
+
+
+def _repair_hut_header(header: list[str], lines: list[str], dialect) -> list[str]:
+    """Cabeceras que no describen las filas (las filas son correctas):
+    - 2018T2: 'LONGITUD_X -LATITUD_Y' en una sola columna.
+    - 2020T3: faltan NUMERO_REGISTRE_GENERALITAT y NUMERO_PLACES, las filas sí los traen.
+    Se decide por la longitud mayoritaria de las filas."""
+    lengths = Counter(len(next(csv.reader([ln], dialect))) for ln in lines[:500])
+    usual = lengths.most_common(1)[0][0]
+    if "LONGITUD_X -LATITUD_Y" in header and usual == len(header) + 1:
+        i = header.index("LONGITUD_X -LATITUD_Y")
+        header = header[:i] + ["LONGITUD_X", "LATITUD_Y"] + header[i + 1 :]
+    if (
+        "NUMERO_REGISTRE_GENERALITAT" not in header
+        and header[-2:] == ["LONGITUD_X", "LATITUD_Y"]
+        and usual == len(header) + 2
+    ):
+        header = header[:-2] + [
+            "NUMERO_REGISTRE_GENERALITAT",
+            "NUMERO_PLACES",
+            "LONGITUD_X",
+            "LATITUD_Y",
+        ]
+    return header
 
 
 def _repair_hut_row(header: list[str], line: str, row: list[str]) -> list[str] | None:
@@ -380,6 +421,7 @@ def _read_hut_csv(path: Path) -> tuple[list[str], list[list[str]], int, int]:
     else:
         lines = lines[1:]
     header = [_HUT_HEADER_ALIASES.get(c, c) for c in header]
+    header = _repair_hut_header(header, lines, dialect)
 
     rows, repaired, dropped = [], 0, 0
     for line in lines:
@@ -406,11 +448,8 @@ def load_hut_registry(client) -> None:
             resource["url"], LANDING / "bcn_hut" / f"{snapshot_date}_{resource['name']}"
         )
         header, rows, repaired, dropped = _read_hut_csv(path)
-        # antes de 2020T4 (y en 2024T2) no se publica el nº de registro: sin él no
-        # hay cruce posible con los anuncios.
-        if "NUMERO_REGISTRE_GENERALITAT" not in header:
-            log.warning("bcn_hut %s: sin nº de registro, se omite", resource["name"])
-            continue
+        # antes de 2020T4 (y en 2024T2) no se publica el nº HUTB: esos trimestres
+        # no sirven para cruzar con los anuncios, pero sí para contar licencias.
         if repaired or dropped:
             log.warning(
                 "bcn_hut %s: %d filas reparadas, %d descartadas",
@@ -422,9 +461,43 @@ def load_hut_registry(client) -> None:
         log.info("bcn_hut_registry %s: %d filas", snapshot_date, n)
 
 
+def _read_ine_districts(path: Path) -> tuple[list[str], list[tuple]]:
+    """Hoja de distritos del Excel del INE. Las cabeceras cambian entre periodos
+    (CODIGO/CUDIS, Prov/PROV...): se normalizan a minúsculas con '_'."""
+    import openpyxl  # solo lo necesita esta fuente
+
+    wb = openpyxl.load_workbook(path, read_only=True)
+    rows = wb[wb.sheetnames[1]].iter_rows(values_only=True)
+    header = [str(c).strip().lower().replace(" ", "_") for c in next(rows)]
+    header = ["codigo" if c == "cudis" else c for c in header]
+    body = [tuple(None if v is None else str(v) for v in r) for r in rows if r and r[0]]
+    wb.close()
+    return header, body
+
+
+def load_ine_tourist_dwellings(client) -> None:
+    resp = requests.get(
+        f"{INE_VIV_TURISTICA}exp_viv_turistica_descarga.htm", timeout=30
+    )
+    resp.raise_for_status()
+    for name in sorted(
+        set(re.findall(r"exp_viv_turistica_tabla5_\w+\.xlsx", resp.text))
+    ):
+        month, year = re.search(r"_([A-Z]{3})(\d{4})\.xlsx", name).groups()
+        snapshot_date = date(int(year), _INE_MESES[month], 1).isoformat()
+        path = _download(f"{INE_VIV_TURISTICA}{name}?nocab=1", LANDING / "ine" / name)
+        header, rows = _read_ine_districts(path)
+        n = _replace_partition(
+            client, "ine_tourist_dwellings", snapshot_date, header, rows
+        )
+        log.info("ine_tourist_dwellings %s: %d filas", snapshot_date, n)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", choices=["airbnb", "rent", "hut"], default=None)
+    parser.add_argument(
+        "--only", choices=["airbnb", "rent", "hut", "ine"], default=None
+    )
     args = parser.parse_args()
 
     client = get_client()
@@ -436,6 +509,8 @@ def main() -> None:
         load_rent(client)
     if args.only in (None, "hut"):
         load_hut_registry(client)
+    if args.only in (None, "ine"):
+        load_ine_tourist_dwellings(client)
 
 
 if __name__ == "__main__":

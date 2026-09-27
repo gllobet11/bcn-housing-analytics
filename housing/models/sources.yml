@@ -35,3 +35,12 @@ sources:
           se publica el nº HUTB). `_snapshot_date` es el cierre del trimestre, o la
           fecha de publicación para el fichero vigente. Filas mal alineadas del
           origen reparadas en la ingesta (ver `_repair_hut_row`).
+      - name: ine_tourist_dwellings
+        description: >
+          INE, estadística experimental "Medición del número de viviendas turísticas en
+          España y su capacidad": resultados por distrito censal de toda España, un
+          Excel por periodo (dos al año desde 2020-08). Cuenta viviendas anunciadas en
+          Airbnb, Booking y Vrbo, deduplicadas. `_snapshot_date` = mes de referencia.
+        freshness:
+          warn_after: { count: 200, period: day }
+          error_after: { count: 400, period: day }
