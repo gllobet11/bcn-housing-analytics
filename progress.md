@@ -109,7 +109,7 @@ Registro por fase: qué se hizo, decisiones tomadas (y por qué), errores encont
 - Fase cerrada: repo público en `github.com/gllobet11/bcn-housing-analytics`, `main` protegida, CI y CD verificados corriendo de verdad en GitHub Actions (no solo en local), docs publicados en `https://gllobet11.github.io/bcn-housing-analytics/` y enlazados desde el README.
 
 ## Fase 7 — Nuevo mercado + análisis
-- Estado: pendiente
+- Estado: en curso. La parte de **análisis** está hecha y ampliada respecto al kickoff (secciones siguientes, 2026-09-27): se decidió profundizar en el análisis de Barcelona antes de añadir Madrid. **Pendiente**: parametrizar con la variable dbt `market` y añadir Madrid.
 
 ## Mantenimiento post-Fase 6 — datos de `raw` y SCD2 (2026-09-27)
 - **`raw` contaminado con fixtures de CI**: el 2026-09-23, durante las pruebas locales de la Fase 6 (bug de `CLICKHOUSE_DB`), `load_ci_fixtures.py` cargó sobre `raw` en vez de `raw_ci`: `airbnb_listings`/`airbnb_calendar` 2026-06-24 quedaron con 200 filas y `bcn_rent` con 400 filas extra bajo `_snapshot_date=2026-06-24`. Los marts no lo reflejaban porque se habían construido antes. Arreglo: `load_airbnb_snapshot(client, '2026-06-24')` desde `data/landing/` (caché, sin red) y `DROP PARTITION` de las filas de fixtures en `bcn_rent`.
@@ -169,3 +169,14 @@ Registro por fase: qué se hizo, decisiones tomadas (y por qué), errores encont
 - Validado: medición local antes/después y reintento del DAG real con el código corregido (bind mount de `ingestion/`).
 - **Segundo bug en la misma validación (latente desde la Fase 1)**: `load_rent` guarda cada extracción con `_snapshot_date` = día de descarga. En la Fase 5 las dos ejecuciones del DAG fueron el mismo día (reemplazaban la misma partición), pero al ejecutarlo otro día `raw.bcn_rent` acumula dos extracciones completas y `stg_bcn__rent` falla su test de unicidad (11.667 duplicados). Arreglo: `raw` conserva todas las extracciones (auditoría) y staging expone solo la más reciente (`max(_snapshot_date)`).
 - Validado de punta a punta en Airflow: ejecución manual del DAG con la imagen reconstruida → 38/38 tareas en `success` (ingesta de las 5 fuentes, 18 modelos + tests, source freshness). Números clave idénticos a los de las PRs #4-#7 (listings 19.410/18.177/16.107/15.293, 2.967 HUTB fuera de registro, registro 9.594 → 10.712, INE 17.280 → 8.231).
+
+## Estado a 2026-09-27 y próximos pasos
+- `main` (tras #4-#8): 5 fuentes (Inside Airbnb, Barcelona Dades, registro municipal HUT, INE), 18 modelos + seed + snapshot, CI/CD en verde, docs publicados, DAG validado de punta a punta en Airflow (38/38 tareas).
+- Próximos pasos, por prioridad:
+  1. **Pedir el archivo histórico a Inside Airbnb** (Barcelona desde ~2015; [formulario](https://insideairbnb.com/data-requests/), gratis para residentes/activistas con fines alineados). Es la única vía para ver temporada y licencias anuncio a anuncio antes de sep-2025. `load_raw.py` solo necesitaría añadir las fechas a `AIRBNB_SNAPSHOTS`.
+  2. Añadir el nº de contratos de alquiler de larga duración (Open Data BCN / Barcelona Dades) para tener volumen además de precio.
+  3. Investigar por qué el registro municipal crece un 12 % desde 2023 pese a la moratoria de nuevas HUT.
+  4. Fase 7 pendiente: variable `market` y Madrid.
+- Notas de operación:
+  - La máquina local (WSL, 12 GB) va justa con Airflow + ClickHouse + otros proyectos levantados; tras el fix de memoria la ingesta usa ~200 MB, pero conviene parar el stack cuando no se use (`docker compose down`, los datos persisten en los volúmenes).
+  - Las PRs encadenadas con squash + branch protection `strict` generan conflictos de posición en `progress.md` al actualizar cada rama; resolver con la versión de la rama tras comprobar que no quita líneas de `main`.
