@@ -1,5 +1,11 @@
+-- raw guarda una copia completa por extracción (_snapshot_date = día de la
+-- descarga): staging expone solo la más reciente, si no cada ejecución en un
+-- día distinto duplicaría todas las filas.
 with source as (
     select * from {{ source('raw', 'bcn_rent') }}
+    where _snapshot_date = (
+        select max(newest._snapshot_date) from {{ source('raw', 'bcn_rent') }} as newest
+    )
 )
 
 select

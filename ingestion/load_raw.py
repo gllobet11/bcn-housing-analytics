@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import gc
 import gzip
 import io
 import json
@@ -135,6 +136,10 @@ def _replace_partition(
         if len(batch) >= batch_size:
             client.insert(table, batch, column_names=all_cols)
             batch = []
+            # cada insert deja ciclos de referencias (contexto de clickhouse_connect)
+            # que el GC automático tarda en liberar: sin esto un calendario de ~7M
+            # filas acumula ~1,5 GB y 4 snapshots seguidos agotan la memoria.
+            gc.collect()
     if batch:
         client.insert(table, batch, column_names=all_cols)
     return count
