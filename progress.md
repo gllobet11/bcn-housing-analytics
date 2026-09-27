@@ -110,3 +110,9 @@ Registro por fase: qué se hizo, decisiones tomadas (y por qué), errores encont
 
 ## Fase 7 — Nuevo mercado + análisis
 - Estado: pendiente
+
+## Mantenimiento post-Fase 6 — datos de `raw` y SCD2 (2026-09-27)
+- **`raw` contaminado con fixtures de CI**: el 2026-09-23, durante las pruebas locales de la Fase 6 (bug de `CLICKHOUSE_DB`), `load_ci_fixtures.py` cargó sobre `raw` en vez de `raw_ci`: `airbnb_listings`/`airbnb_calendar` 2026-06-24 quedaron con 200 filas y `bcn_rent` con 400 filas extra bajo `_snapshot_date=2026-06-24`. Los marts no lo reflejaban porque se habían construido antes. Arreglo: `load_airbnb_snapshot(client, '2026-06-24')` desde `data/landing/` (caché, sin red) y `DROP PARTITION` de las filas de fixtures en `bcn_rent`.
+- **Snapshot 2025-12-14 sin precio**: no es un bug nuestro. Inside Airbnb publicó ese snapshot con `price` y `estimated_revenue_l365d` vacíos en el 100 % de filas, y el `calendar.csv.gz` de ese snapshot tampoco trae precio. `precio_medio_noche` de 2025T4 queda NULL en `mart_barrio_quarter`.
+- **`fct_price_changes` vacío / mal fechado**: (1) `snp_listings` solo se había ejecutado una vez; se añade la var opcional `snapshot_date` para reproducir el histórico en orden (`dbt snapshot --vars "{snapshot_date: 'YYYY-MM-DD'}"` por cada snapshot, empezando con `snp_listings` vacía); (2) con `strategy='check'`, `dbt_valid_from` es la hora de ejecución de dbt, no la del dato: `changed_at` pasa a salir de `_snapshot_date`; (3) las filas sin precio (dic-2025) cortaban la comparación sep→mar: se excluyen antes del `lagInFrame` para comparar contra el último precio conocido.
+- Validado: `raw` con 19.410/18.177/16.107/15.293 listings por snapshot; `dbt build --full-refresh` 51/51 + tests de `snp_listings` 3/3; `fct_price_changes` con 9.909 cambios (2026-03-21) y 10.369 (2026-06-24); `pre-commit run --all-files` en verde.
