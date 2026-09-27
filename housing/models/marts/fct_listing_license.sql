@@ -32,19 +32,27 @@ registry as (
         plazas,
         longitude,
         latitude,
-        1 as found
+        1 as in_registry
     from {{ ref('fct_hut_registry') }}
 ),
 
 -- el registro vigente en cada snapshot de Airbnb es el último publicado antes.
 -- No vale un ASOF JOIN por hutb_num: encontraría la última aparición de esa
 -- licencia aunque ya se hubiera dado de baja.
+listing_snapshots as (
+    select distinct listings.snapshot_date from listings
+),
+
+registry_snapshots as (
+    select distinct registry.snapshot_date from registry
+),
+
 registry_as_of as (
     select
         l.snapshot_date,
         max(r.snapshot_date) as registry_snapshot
-    from (select distinct snapshot_date from listings) as l
-    cross join (select distinct snapshot_date from registry) as r
+    from listing_snapshots as l
+    cross join registry_snapshots as r
     where r.snapshot_date <= l.snapshot_date
     group by l.snapshot_date
 ),
@@ -79,19 +87,19 @@ select
         match(l.license, 'ESFCTU'), 'registro_nacional_turistico',
         match(l.license, 'ESFCNT'), 'registro_nacional_no_turistico',
         match(l.license, '(?i)exempt'), 'exempt',
-        ifNull(l.license, '') = '', 'sin_licencia',
+        coalesce(l.license, '') = '', 'sin_licencia',
         'otra'
     ) as license_type,
     l.hutb_num as hutb_num,  -- noqa: AL09
     a.registry_snapshot as registry_snapshot,  -- noqa: AL09
-    if(l.hutb_num is null, null, r.found = 1) as hutb_en_registro,
-    if(r.found = 1, r.barrio_id = l.barrio_id, null) as hutb_mismo_barrio,
+    if(l.hutb_num is null, null, r.in_registry = 1) as hutb_en_registro,
+    if(r.in_registry = 1, r.barrio_id = l.barrio_id, null) as hutb_mismo_barrio,
     if(
-        r.found = 1,
+        r.in_registry = 1,
         greatCircleDistance(l.longitude, l.latitude, r.longitude, r.latitude),
         null
     ) as hutb_distancia_m,
-    if(r.found = 1, r.plazas, null) as hutb_plazas_registro,
+    if(r.in_registry = 1, r.plazas, null) as hutb_plazas_registro,
     u.n_anuncios_misma_licencia as n_anuncios_misma_licencia,  -- noqa: AL09
     u.n_hosts_misma_licencia as n_hosts_misma_licencia  -- noqa: AL09
 from listings as l
