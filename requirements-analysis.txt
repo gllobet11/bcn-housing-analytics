@@ -1,0 +1,4 @@
+-r requirements.txt
+pandas==2.*
+folium==0.*
+jupyterlab==4.*
