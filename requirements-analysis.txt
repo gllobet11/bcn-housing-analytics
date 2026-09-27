@@ -1,0 +1,5 @@
+-r requirements.txt
+pandas==2.*
+folium==0.*
+matplotlib==3.*
+jupyterlab==4.*

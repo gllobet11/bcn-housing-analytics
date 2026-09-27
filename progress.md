@@ -136,3 +136,13 @@ Registro por fase: qué se hizo, decisiones tomadas (y por qué), errores encont
   - Sorting key `Nullable` (`hutb_num`) y alias explícitos tras JOIN en `fct_listing_license`: mismos problemas de ClickHouse 24.8 que en las fases 3-4.
 - Hallazgo validado: en el snapshot 2026-06-24, 2.967 de 7.415 anuncios con HUTB no están en el registro municipal vigente. No es un fallo del cruce: 1.808 declaran un número imposible (0 o mayor que el máximo emitido por la Generalitat, HUTB-079999), 1.120 un número válido que no es de Barcelona (muestra contra la Generalitat: Sitges, Cubelles, Santa Susanna…) y 39 una licencia de Barcelona ya dada de baja.
 - Validado: `dbt build --full-refresh` 63/63 (1 warn: 114 licencias sin barrio en el origen); `dbt build --target ci` 68/68 sobre fixtures; `pre-commit run --all-files` en verde.
+
+## Notebook de análisis: oferta, temporada y licencias (2026-09-27)
+- Qué se hizo: `notebooks/analisis_licencias.ipynb` sobre los marts (oferta de Airbnb, clasificación de licencias, transiciones sep-2025 → jun-2026, HUTB compartidos, registro municipal, alquiler €/m² antes/después de marzo 2024, cruce por barrio) y mapa interactivo con folium (un punto por anuncio, popup con las condiciones, capas por situación de licencia). Dependencias en `requirements-analysis.txt`, separado de `requirements.txt` para no instalar Jupyter en CI.
+- Decisiones:
+  - La clasificación de licencias para el análisis (válida / HUTB inexistente / temporada / no registrado / corta sin licencia) vive en el notebook, no en dbt: incluye un umbral externo (`HUTB-079999`, máximo emitido según la Generalitat) y es una lectura analítica, no un dato del modelo.
+  - Paleta categórica de 5 colores validada con el validador de la skill dataviz (CVD y visión normal en PASS; 3 colores < 3:1 sobre blanco → leyenda + tablas).
+  - Mapa con una capa GeoJSON por categoría y popups construidos por folium a partir de los datos: el HTML pasa de 34 MB (un `CircleMarker` con HTML propio por anuncio) a ~11 MB. Teselas `Esri.WorldGrayCanvas`: las de CARTO ya piden API key.
+  - El notebook se versiona sin la salida del mapa (quedaría en ~15 MB); el mapa se guarda en `notebooks/output/` (ignorado por git).
+- Hallazgos en el propio notebook (sección 7). Hipótesis del usuario revisada con datos: la temporada no crece en estos 9 meses (~35 % estable, desplazamiento neto corta → temporada de solo +172 anuncios); lo que cae es la corta estancia sin licencia (28 % → 10 %), sobre todo porque desaparece (57 %) o se regulariza (884 anuncios pasan a declarar un HUTB válido).
+- Validado: ejecución completa con `jupyter nbconvert --execute`; mapa renderizado en Chromium headless (15.293 puntos, popup comprobado con click); `pre-commit run --all-files` en verde.

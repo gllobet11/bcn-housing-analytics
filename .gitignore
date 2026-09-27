@@ -10,3 +10,4 @@ __pycache__/
 airflow/logs/
 airflow/plugins/
 .serena/
+notebooks/output/
